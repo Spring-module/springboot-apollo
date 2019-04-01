@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.1.xsd
+		http://code.alibabatech.com/schema/dubbo http://code.alibabatech.com/schema/dubbo/dubbo.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.1.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.1.xsd">
+		
+    	<!-- 2:数据库连接池 -->
+        <bean id="commonDataSource" abstract="true" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close"> 
+         <property name="filters" value="stat" />
+	     <property name="maxActive" value="300" />
+	     <property name="initialSize" value="30" />
+	     <property name="maxWait" value="60000" />
+	     <property name="minIdle" value="1" />
+	     <property name="timeBetweenEvictionRunsMillis" value="60000" />
+	     <property name="minEvictableIdleTimeMillis" value="300000" />
+	     <property name="validationQuery" value="SELECT 1" />
+	     <property name="testWhileIdle" value="true" />
+	     <property name="testOnBorrow" value="true" />
+	     <property name="testOnReturn" value="false" />
+	     <property name="poolPreparedStatements" value="false" />
+	     <property name="maxOpenPreparedStatements" value="20" />
+	     <property name="removeAbandoned" value="true" />
+         <property name="removeAbandonedTimeout" value="1800" />
+         <property name="logAbandoned" value="true" />    
+      </bean>
+      
+      <bean id="oaDataSource"  parent="commonDataSource" primary="true">
+        <property name="driverClassName" value="${jdbc.sqlserver.driver}"/>
+        <property name="url" value="${jdbc.oa.url}"/>
+        <property name="username" value="${jdbc.oa.username}"/>
+        <property name="password" value="${jdbc.oa.password}"/>
+      </bean>
+     
+      <bean id="ecomDataSource"  parent="commonDataSource">
+        <property name="driverClassName" value="${jdbc.mysql.driver}"/>
+        <property name="url" value="${jdbc.ecom.url}"/>
+        <property name="username" value="${jdbc.ecom.username}"/>
+        <property name="password" value="${jdbc.ecom.password}"/>
+      </bean>
+     
+	
+    <bean id="dataSource" class="com.qk365.framework.db.DbRouteDataSource">
+		<property name="targetDataSources">
+			<map>
+				<entry key="oa" value-ref="oaDataSource"></entry>
+				<entry key="ecom" value-ref="ecomDataSource"></entry>
+			</map>
+		</property>
+		<property name="defaultTargetDataSource" ref="ecomDataSource" />
+	</bean>
+	
+	<bean id="transactionManager"  
+        class="org.springframework.jdbc.datasource.DataSourceTransactionManager"  
+        p:dataSource-ref="dataSource">  
+     </bean>
+	
+	<!-- proxy-target-class 决定是基于接口的还是基于类的代理被创建 -->
+	<tx:annotation-driven transaction-manager="transactionManager" proxy-target-class="true" />
+	
+</beans>
